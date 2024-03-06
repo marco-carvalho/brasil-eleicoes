@@ -43,7 +43,7 @@ with zipfile.ZipFile(zip_bytes, 'r') as z:
   with z.open("gadm36_BRA.gpkg") as gpkg_bytes:
     brazil_states = gpd.read_file(gpkg_bytes, layer='gadm36_BRA_1')
 
-fig, ax = plt.subplots(1, figsize=(15, 15))
+fig, ax = plt.subplots(1, figsize=(12, 10))
 
 gradient_colors = LinearSegmentedColormap.from_list("Custom", [(0, 0, 1), (1, 0, 0)], N=eleicoes['Ano'].nunique()+1)
 
@@ -65,7 +65,7 @@ for idx, row in brazil_states.iterrows():
     x=row.geometry.centroid.x,
     y=row.geometry.centroid.y,
     horizontalalignment='center',
-    fontsize=6,
+    fontsize=8,
     fontweight='bold',
     color='black',
     path_effects=[PathEffects.withStroke(linewidth=3, foreground="white")]
@@ -74,4 +74,6 @@ for idx, row in brazil_states.iterrows():
 legend_patches.sort(key=lambda x: int(x.get_label().split()[0]))
 plt.title(f"Resultados das eleições presidenciais no Brasil no segundo turno de {eleicoes['Ano'].min()} até {eleicoes['Ano'].max()}")
 plt.legend(handles=legend_patches)
+plt.tight_layout()
+plt.savefig('brasil-eleicoes.png', dpi=300)
 plt.show()
