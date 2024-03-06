@@ -1,0 +1,30 @@
+name: Update Image and README
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-image:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run script to generate image
+      run: python index.py
+
+    - name: Update README.md
+      run: echo '![Generated Image](brasil-eleicoes.png)' > README.md
+
+    - name: Commit and Push changes
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: "Automatically update image and README"
