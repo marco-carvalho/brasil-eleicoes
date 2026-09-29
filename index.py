@@ -1,5 +1,4 @@
 import pandas as pd
-import zipfile
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
@@ -8,8 +7,13 @@ import matplotlib.patches as mpatches
 import requests
 import io
 
+HEADERS = {'User-Agent': 'brasil-eleicoes/1.0 (https://github.com/marco-carvalho/brasil-eleicoes)'}
+
 def get_dados_eleicao(url, index_table, year, index_column, left, right):
-  eleicao = pd.read_html(url, flavor='bs4')[index_table][:27].iloc[: , :8]
+  response = requests.get(url, headers=HEADERS, timeout=30)
+  response.raise_for_status()
+  eleicao = pd.read_html(io.StringIO(response.text), flavor='bs4')[index_table]
+  eleicao = eleicao.dropna(how='all')[:27].iloc[:, :8]
   eleicao.insert(0, 'Ano', year)
   eleicao.rename(columns={f'Estado[{index_column}]':'Estado'}, inplace=True)
   eleicao.rename(columns={left:'PT'}, inplace=True)
@@ -17,7 +21,7 @@ def get_dados_eleicao(url, index_table, year, index_column, left, right):
   return eleicao
 
 eleicoes = pd.concat([
-  get_dados_eleicao("https://pt.wikipedia.org/wiki/Elei%C3%A7%C3%A3o_presidencial_no_Brasil_em_2006", 9, 2006, 7, 'Lula', 'Alckmin'),
+  get_dados_eleicao("https://pt.wikipedia.org/wiki/Elei%C3%A7%C3%A3o_presidencial_no_Brasil_em_2006", 11, 2006, 7, 'Lula', 'Alckmin'),
   get_dados_eleicao("https://pt.wikipedia.org/wiki/Resultados_da_elei%C3%A7%C3%A3o_presidencial_no_Brasil_em_2010", 4, 2010, 3, 'Dilma', 'Serra'),
   get_dados_eleicao("https://pt.wikipedia.org/wiki/Resultados_da_elei%C3%A7%C3%A3o_presidencial_no_Brasil_em_2014", 4, 2014, 4, 'Dilma', 'Aécio'),
   get_dados_eleicao("https://pt.wikipedia.org/wiki/Resultados_da_elei%C3%A7%C3%A3o_presidencial_no_Brasil_em_2018", 7, 2018, 3, 'Haddad', 'Bolsonaro'),
@@ -37,11 +41,9 @@ eleicoes['Outros'] = eleicoes['Eleitorado']-eleicoes['Abstenção']-eleicoes['PT
 eleicoes['%Outros'] = eleicoes['Outros']/eleicoes['Eleitorado']
 eleicoes.reset_index(drop=True)
 
-response = requests.get("https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/gadm36_BRA_gpkg.zip")
-zip_bytes = io.BytesIO(response.content)
-with zipfile.ZipFile(zip_bytes, 'r') as z:
-  with z.open("gadm36_BRA.gpkg") as gpkg_bytes:
-    brazil_states = gpd.read_file(gpkg_bytes, layer='gadm36_BRA_1')
+response = requests.get("https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2025/Brasil/BR_UF_2025.zip", headers=HEADERS, timeout=60)
+response.raise_for_status()
+brazil_states = gpd.read_file(io.BytesIO(response.content))
 
 fig, ax = plt.subplots(1, figsize=(12, 10))
 
@@ -49,7 +51,7 @@ gradient_colors = LinearSegmentedColormap.from_list("Custom", [(0, 0, 1), (1, 0,
 
 legend_patches = []
 for idx, row in brazil_states.iterrows():
-  state_name = row['NAME_1']
+  state_name = row['NM_UF']
   eleicoes_loop_estado = eleicoes[eleicoes['Estado'] == state_name]
   number_of_pt_wins = sum(eleicoes_loop_estado['%PT'] > eleicoes_loop_estado['%Oposição'])
   color = gradient_colors(number_of_pt_wins)
