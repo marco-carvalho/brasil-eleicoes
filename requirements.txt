@@ -1,6 +1,4 @@
 pandas
 geopandas
-html5lib
-beautifulsoup4
 requests
 matplotlib

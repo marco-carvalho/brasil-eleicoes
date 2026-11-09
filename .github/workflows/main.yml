@@ -22,7 +22,14 @@ jobs:
       run: python index.py
 
     - name: Update README.md
-      run: echo '![Generated Image](brasil-eleicoes.png)' > README.md
+      run: |
+        cat > README.md <<'EOF'
+        Fonte: [Tribunal Superior Eleitoral](https://dadosabertos.tse.jus.br/), votação nominal por município e zona.
+
+        ![Primeiro turno](brasil-eleicoes-primeiro-turno.png)
+
+        ![Segundo turno](brasil-eleicoes-segundo-turno.png)
+        EOF
 
     - name: Commit and Push changes
       uses: stefanzweifel/git-auto-commit-action@v4
